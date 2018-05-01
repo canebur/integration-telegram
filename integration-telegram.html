@@ -1,0 +1,36 @@
+<link rel="import" href="../polymer/polymer-element.html">
+
+<dom-module id="integration-telegram">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <h2>Hello [[prop1]]!</h2>
+  </template>
+
+  <script>
+    /**
+     * `integration-telegram`
+     * Polymer component to consume the Telegram API into aplicationweb-mobile-specialist and realice the follow tasks: Pas to realice the follow taskfrom Telegram, assitance notifications, customized alerts in time to pass list.
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class IntegrationTelegram extends Polymer.Element {
+      static get is() { return 'integration-telegram'; }
+      static get properties() {
+        return {
+          prop1: {
+            type: String,
+            value: 'integration-telegram'
+          }
+        };
+      }
+    }
+
+    window.customElements.define(IntegrationTelegram.is, IntegrationTelegram);
+  </script>
+</dom-module>
