@@ -3,7 +3,9 @@
   "description": "Polymer component to consume the Telegram API into aplicationweb-mobile-specialist and realice the follow tasks: Pas to realice the follow taskfrom Telegram, assitance notifications, customized alerts in time to pass list.",
   "main": "integration-telegram.html",
   "dependencies": {
-    "polymer": "Polymer/polymer#^2.0.0"
+    "polymer": "Polymer/polymer#^2.0.0",
+    "iron-ajax": "^2.1.3",
+    "paper-button": "^2.1.1"
   },
   "devDependencies": {
     "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^2.0.0",

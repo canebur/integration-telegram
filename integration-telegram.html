@@ -1,13 +1,31 @@
 <link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../paper-button/paper-button.html">
 
 <dom-module id="integration-telegram">
   <template>
-    <style>
-      :host {
-        display: block;
-      }
-    </style>
-    <h2>Hello [[prop1]]!</h2>
+    <h3>[[alert]]</h3>
+    <template is="dom-repeat" items="[[messages]]" as="message">
+      <!--<br>[[message.message.text]]
+      [[message.message.chat.id]]</br>-->
+    </template>
+    <paper-button raised class="indigo" on-click="sincronizar">Sincronizar con Telegram</paper-button>
+    <iron-ajax
+      id="getUpdatesTelegram"
+      url="https://api.telegram.org/bot457311764:AAETmA4i-U3r8KMm5EeRni3fq8uGYaqKakQ/getUpdates"
+      params='{}'
+      handle-as="json"
+      on-response="handleResponseGetUpdates"
+      on-error="handleUserErrorGetUpdates"
+      debounce-duration="300"></iron-ajax>
+      <iron-ajax
+      id="sendMessage"
+      url="https://api.telegram.org/bot457311764:AAETmA4i-U3r8KMm5EeRni3fq8uGYaqKakQ/sendMessage?chat_id=[[idTelegram]]&text=[[MessageBot]]"
+      params='{}'
+      handle-as="json"
+      on-response="handleResponseSendMessageBot"
+      on-error="handleUserErrorSendMessageBot"
+      debounce-duration="300"></iron-ajax>
   </template>
 
   <script>
@@ -26,11 +44,84 @@
           prop1: {
             type: String,
             value: 'integration-telegram'
+          },
+          messages: {
+            type: Array,
+            value: []
+          },
+          tokens: {
+            type: Array,
+            value: []
+          },
+          alert: {
+            type: String,
+            value: ''
+          },
+          idTelegram: {
+            type: Number,
+            value: 0
+          },
+          MessageBot: {
+            type: String,
+            value: ''
           }
         };
       }
-    }
 
+      handleResponseSendMessageBot(event){
+        console.log(`Status OK: ${event}`);
+      }
+
+      handleUserErrorSendMessageBot(event){
+        console.log(`Status FAIL: ${event}`);
+      }
+
+      setDB(telegramID, gitHubId, code) {
+        console.log(`Telegram id = ${telegramID} , gitHub id = ${gitHubId}`);
+        this.idTelegram = telegramID;
+        this.MessageBot = "Synchronization correct";
+        this.$.sendMessage.generateRequest();
+        this.tokens = this.tokens.filter(token => token.number != code);
+      }
+
+      handleResponseGetUpdates(event) {
+        this.messages = event.detail.__data.response.result;
+        let position, code;
+        for (let message of this.messages){
+          position = message.message.text.indexOf(":")
+          if (position !== -1){
+            code = message.message.text.substr(position + 1);
+            for (let token of this.tokens){
+              if (token.number == code){
+                this.setDB(message.message.chat.id, token.id, code);
+              }
+            }
+          }
+        }
+      }
+
+      handleUserErrorGetUpdates(event) {
+        console.log("Fail" + event);
+      }
+
+      generateRandom() {
+        return Math.floor((Math.random() * 9999999999) + 1);
+      }
+      
+      obtainIdGit(){
+        return Math.floor((Math.random() * 99999) + 1);
+      }
+
+      sincronizar(){
+        this.$.getUpdatesTelegram.generateRequest();
+        const number = this.generateRandom();
+        const id = this.obtainIdGit();
+        const token = {id, number};
+        this.alert = `Ingresa este número a telegram: ${token.number}`;
+        this.tokens.push(token); 
+      }
+
+    };
     window.customElements.define(IntegrationTelegram.is, IntegrationTelegram);
   </script>
 </dom-module>
