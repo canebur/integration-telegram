@@ -64,6 +64,10 @@
           MessageBot: {
             type: String,
             value: ''
+          },
+          arrayTesting: {
+            type: Array,
+            value: [{"idGit":"0","idTelegram":"429645463"},{"idGit":"1","idTelegram":"181857068"},{"idGit":"2","idTelegram":"181857069"}]
           }
         };
       }
@@ -120,7 +124,25 @@
         this.alert = `Ingresa este número a telegram: ${token.number}`;
         this.tokens.push(token); 
       }
+      
+      sendAlert(){
+        this.MessageBot = "Don't remember pass list, Please man";
+        for (let user of this.arrayTesting){
+          this.idTelegram = user.idTelegram;
+          this.$.sendMessage.generateRequest();
+        }
+      }
 
+      connectedCallback() {
+        super.connectedCallback();
+        
+        setInterval(() => { 
+          let hour = new Date();
+          if ("15:00:00" == hour.toLocaleTimeString()){
+            this.sendAlert();
+          }
+        }, 1000);
+      }
     };
     window.customElements.define(IntegrationTelegram.is, IntegrationTelegram);
   </script>
