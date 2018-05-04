@@ -1,6 +1,9 @@
 <link rel="import" href="../polymer/polymer-element.html">
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../polymerfire/firebase-app.html">
+<link rel="import" href="../polymerfire/firebase-document.html">
+<script src="https://www.gstatic.com/firebasejs/4.13.0/firebase.js"></script>
 
 <dom-module id="integration-telegram">
   <template>
@@ -11,21 +14,39 @@
     </template>
     <paper-button raised class="indigo" on-click="sincronizar">Sincronizar con Telegram</paper-button>
     <iron-ajax
-      id="getUpdatesTelegram"
-      url="https://api.telegram.org/bot457311764:AAETmA4i-U3r8KMm5EeRni3fq8uGYaqKakQ/getUpdates"
-      params='{}'
-      handle-as="json"
-      on-response="handleResponseGetUpdates"
-      on-error="handleUserErrorGetUpdates"
-      debounce-duration="300"></iron-ajax>
+        id="getUpdatesTelegram"
+        url="https://api.telegram.org/bot457311764:AAETmA4i-U3r8KMm5EeRni3fq8uGYaqKakQ/getUpdates"
+        params='{}'
+        handle-as="json"
+        on-response="handleResponseGetUpdates"
+        on-error="handleUserErrorGetUpdates"
+        debounce-duration="300">
+      </iron-ajax>
+
       <iron-ajax
-      id="sendMessage"
-      url="https://api.telegram.org/bot457311764:AAETmA4i-U3r8KMm5EeRni3fq8uGYaqKakQ/sendMessage?chat_id=[[idTelegram]]&text=[[MessageBot]]"
-      params='{}'
-      handle-as="json"
-      on-response="handleResponseSendMessageBot"
-      on-error="handleUserErrorSendMessageBot"
-      debounce-duration="300"></iron-ajax>
+        id="sendMessage"
+        url="https://api.telegram.org/bot457311764:AAETmA4i-U3r8KMm5EeRni3fq8uGYaqKakQ/sendMessage?chat_id=[[idTelegram]]&text=[[MessageBot]]"
+        params='{}'
+        handle-as="json"
+        on-response="handleResponseSendMessageBot"
+        on-error="handleUserErrorSendMessageBot"
+        debounce-duration="300">
+      </iron-ajax>
+
+      <firebase-app
+        name="web-mobile-specialist-5880f"
+        api-key="AIzaSyB88BNZyUVAnqs_RuxNON1WYmsWc6YgI3g"
+        auth-domain="web-mobile-specialist-5880f.firebaseapp.com"
+        database-url="https://web-mobile-specialist-5880f.firebaseio.com">
+      </firebase-app>
+
+      <firebase-document
+          id = "doc"
+          app-name="web-mobile-specialist-5880f"
+          path="/users"
+          data="{{usersData}}"
+      ></firebase-document>
+
   </template>
 
   <script>
@@ -67,9 +88,21 @@
           },
           arrayTesting: {
             type: Array,
-            value: [{"idGit":"0","idTelegram":"429645463"},{"idGit":"1","idTelegram":"181857068"},{"idGit":"2","idTelegram":"181857069"}]
+            value: [{"idGit":"0","idTelegram":"429645463"},{"idGit":"1","idTelegram":"181857068"}]
+          },
+          usersData: {
+            type: Object,
+            value: {},
+            observer: 'updateData'
+          },
+          database: {
+            type: Object,
+            value: {}
           }
         };
+      }
+
+      updateData(){
       }
 
       handleResponseSendMessageBot(event){
@@ -81,6 +114,8 @@
       }
 
       setDB(telegramID, gitHubId, code) {
+        const user = this.database.ref('users').push();
+        user.set({"Github":gitHubId,"Telegram":telegramID});
         console.log(`Telegram id = ${telegramID} , gitHub id = ${gitHubId}`);
         this.idTelegram = telegramID;
         this.MessageBot = "Synchronization correct";
@@ -88,17 +123,57 @@
         this.tokens = this.tokens.filter(token => token.number != code);
       }
 
+      passList(){
+        const idGit = obtainIdGit();
+        /**
+        * @todo: Send Event
+        */
+      }
+      
+      searchIdTelegram(idGit){
+        if (Object.keys(this.usersData).length !== 0 ){
+          for (let user of this.usersData){
+            if (user !== undefined){
+              if (user.Github === idGit){
+                return user.Telegram;
+              }
+            }
+          }
+        }
+      }
+
+      sendAlertConfirm(){
+        //const idGit = obtainIdGit();
+        //this.idTelegram = searchIdTelegram(idGit);
+        this.MessageBot = "Your pass was registered in the System. Thanks";
+        if (Object.keys(this.usersData).length !== 0 ){
+          for (let user of this.usersData){
+            if (user !== undefined){
+              this.idTelegram = user.Telegram;
+              //this.$.sendMessage.generateRequest();
+            }
+          }
+        }
+        
+      }
+
       handleResponseGetUpdates(event) {
         this.messages = event.detail.__data.response.result;
         let position, code;
         for (let message of this.messages){
-          position = message.message.text.indexOf(":")
+          position = message.message.text.indexOf(":");
           if (position !== -1){
-            code = message.message.text.substr(position + 1);
-            for (let token of this.tokens){
-              if (token.number == code){
-                this.setDB(message.message.chat.id, token.id, code);
+            let command = message.message.text.substr(0 , position);
+            if (command == "/connect"){
+              code = message.message.text.substr(position + 1);
+              for (let token of this.tokens){
+                if (token.number == code){
+                  this.setDB(message.message.chat.id, token.id, code);
+                }
               }
+            }
+            else if (command == "/passList"){
+              this.passList();
             }
           }
         }
@@ -126,22 +201,39 @@
       }
       
       sendAlert(){
-        this.MessageBot = "Don't remember pass list, Please man";
-        for (let user of this.arrayTesting){
-          this.idTelegram = user.idTelegram;
-          this.$.sendMessage.generateRequest();
+        this.MessageBot = "Don't forget pass list today in the system. Thanks";
+        if (Object.keys(this.usersData).length !== 0 ){
+          for (let user in this.usersData){
+            if (user !== undefined){
+              console.log(this.usersData[user].Telegram);
+              this.idTelegram = this.usersData[user].Telegram;
+              this.$.sendMessage.generateRequest();
+            }
+          }
         }
       }
 
       connectedCallback() {
         super.connectedCallback();
+        var config = {
+          apiKey: "AIzaSyB88BNZyUVAnqs_RuxNON1WYmsWc6YgI3g",
+          authDomain: "web-mobile-specialist-5880f.firebaseapp.com",
+          databaseURL: "https://web-mobile-specialist-5880f.firebaseio.com",
+          projectId: "web-mobile-specialist-5880f",
+          storageBucket: "web-mobile-specialist-5880f.appspot.com",
+          messagingSenderId: "350097981067"
+        };
+        firebase.initializeApp(config);
+        this.database = firebase.database();
         
         setInterval(() => { 
           let hour = new Date();
-          if ("15:00:00" == hour.toLocaleTimeString()){
+          if ("11:00:00" == hour.toLocaleTimeString()){
             this.sendAlert();
           }
+          this.$.getUpdatesTelegram.generateRequest();
         }, 1000);
+        
       }
     };
     window.customElements.define(IntegrationTelegram.is, IntegrationTelegram);
